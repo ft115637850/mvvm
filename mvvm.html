@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
+  <title>Data binding test</title>
+</head>
+
+<body>
+  <div>
+    <input type="text" my-value="this.modelValue1"/>
+    <div my-bind="this.modelValue1" my-click="this.myClick($event)"></div>
+  </div>
+  <div>
+    <input type="text" my-value="this.modelValue2"/>
+    <div my-bind="this.modelValue2" my-click="this.myClick($event)"></div>
+  </div>
+</body>
+<script>
+
+const els = document.querySelectorAll('[my-bind]');
+const viewModel = new Proxy({}, {
+  set: (obj, prop, value) => {
+    if (obj[prop] !== value) {
+      obj[prop] = value;
+      els.forEach(el => {
+        const expr = el.getAttribute('my-bind');
+        const result = new Function(`"use strict"; return ${expr};`).call(obj);
+        el.textContent = result;
+      });
+    }
+    return true;
+  }
+});
+
+const valEls = document.querySelectorAll('[my-value]');
+valEls.forEach(
+  el => {
+    const expr = el.getAttribute('my-value');
+    el.addEventListener('keyup',
+      event => {
+        (new Function('$event', `"use strict"; ${expr}='${event.currentTarget.value}';`)).call(viewModel, event);});
+  }
+);
+
+const clickEls = document.querySelectorAll('[my-click]');
+clickEls.forEach(
+  el => {
+    const expr = el.getAttribute('my-click');
+    const fn = new Function('$event', `"use strict"; ${expr};`);
+    el.addEventListener('click', event => fn.call(viewModel, event));
+  }
+);
+
+viewModel.myClick = e => alert(e.currentTarget.innerText)
+</script>
+</html>
